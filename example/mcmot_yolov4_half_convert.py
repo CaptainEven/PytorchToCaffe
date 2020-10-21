@@ -21,7 +21,7 @@ if __name__ == '__main__':
         'img_size': 768,
         'cfg': '/mnt/diskb/even/YOLOV4/cfg/yolov4_half-mcmot.cfg',
         'device': 'cpu',  # '0'
-        'weights': '/mnt/diskb/even/YOLOV4/weights/pure_detect_last.pt',
+        'weights': '/mnt/diskb/even/YOLOV4/weights/v4_half_track_last.pt',
     }
     id2cls = defaultdict(str)
     cls2id = defaultdict(int)

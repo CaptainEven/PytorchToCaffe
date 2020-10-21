@@ -19,9 +19,9 @@ if __name__ == '__main__':
     names = ['car', 'bicycle', 'person', 'cyclist', 'tricycle']
     opt = {
         'img_size': 768,
-        'cfg': '/mnt/diskb/even/YOLOV4/cfg/yolov4-tiny-3l-mcmot.cfg',
+        'cfg': '/mnt/diskb/even/YOLOV4/cfg/yolov4-tiny-3l_no_group_id_no_upsample.cfg',
         'device': 'cpu',  # '0'
-        'weights': '/mnt/diskb/even/YOLOV4/weights/v4_tiny3l_track_last.pt',
+        'weights': '/mnt/diskb/even/YOLOV4/weights/track_last.pt',
     }
     id2cls = defaultdict(str)
     cls2id = defaultdict(int)

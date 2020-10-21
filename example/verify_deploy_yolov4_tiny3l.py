@@ -155,23 +155,23 @@ def forward_caffe(proto_file, weight_file, image):
 
     t1 = time.time()
 
-    # return t1 - t0, net.blobs, net.params
-    return t1 - t0, output, net.params
+    return t1 - t0, net.blobs, net.params
+    # return t1 - t0, output, net.params
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='convert caffe to pytorch')
 
     # Caffe cfg and weight file
-    parser.add_argument('--caffecfg', default='mcmot_yolov4_half.prototxt', type=str)
-    parser.add_argument('--caffeweight', default='mcmot_yolov4_half.caffemodel', type=str)
+    parser.add_argument('--caffecfg', default='mcmot_yolov4_tiny3l.prototxt', type=str)
+    parser.add_argument('--caffeweight', default='mcmot_yolov4_tiny3l.caffemodel', type=str)
 
     # Pytorch cfg and weight file
     parser.add_argument('--pytorchcfg',
                         type=str,
-                        default='/mnt/diskb/even/YOLOV4/cfg/yolov4_half-mcmot.cfg')
+                        default='/mnt/diskb/even/YOLOV4/cfg/yolov4-tiny-3l_no_group_id_no_upsample.cfg')
     parser.add_argument('--pytorchweight',
-                        default='/mnt/diskb/even/YOLOV4/weights/v4_half_track_last.pt',
+                        default='/mnt/diskb/even/YOLOV4/weights/track_last.pt',
                         type=str)
 
     parser.add_argument('--imgfile', default='001763.jpg', type=str)
@@ -210,7 +210,7 @@ if __name__ == '__main__':
     blob_name = 'fc_blob1'
 
     # # ----- Compare 3 deconv layers
-    # three_layer_names = ['leaky_relu_blob93', 'leaky_relu_blob100', 'leaky_relu_blob107']
+    # three_layer_names = ['conv_blob22', 'conv_blob25', 'conv_blob28', 'conv_blob29']
     # caffe_deconv_1 = out_Tensor_caffe[three_layer_names[0]].data
     # caffe_deconv_2 = out_Tensor_caffe[three_layer_names[1]].data
     # caffe_deconv_3 = out_Tensor_caffe[three_layer_names[2]].data
@@ -231,41 +231,41 @@ if __name__ == '__main__':
     # print('{:s} diff: {:.3f}'.format(three_layer_names[1], deconv_diff_2))
     # print('{:s} diff: {:.3f}'.format(three_layer_names[2], deconv_diff_3))
 
-    # ----- Compare 4 output layers
-    def ascend_caffe_out_layer(x, y):
-        x_name, y_name = x[0], y[0]
-        x_match = re.match('([a-zA-Z\_]+)([0-9]+)', x_name).groups()
-        y_match = re.match('([a-zA-Z\_]+)([0-9]+)', y_name).groups()
-        x_id = int(x_match[1])
-        y_id = int(y_match[1])
-
-        if x_id > y_id:
-            return 1
-        elif x_id < y_id:
-            return -1
-        else:
-            return 0
-
-    out_Tensor_caffe = sorted(out_Tensor_caffe.items(), key=cmp_to_key(ascend_caffe_out_layer))
-
-    size, diff_sum = 0, 0.0
-    for x, y in zip(out_Tensor_pytorch, out_Tensor_caffe):
-        blob_name, caffe_data = y[0], y[1]
-
-        if args.cuda:
-            pytorch_data = x.data.cpu().numpy()
-        else:
-            pytorch_data = x.data.numpy()
-
-        assert pytorch_data.shape == caffe_data.shape
-
-        diff = abs(pytorch_data - caffe_data).sum()
-        diff_sum += diff
-        size += pytorch_data.size
-        print('%-30s pytorch_shape: %-20s caffe_shape: %-20s output_diff: %f' % (
-            blob_name, pytorch_data.shape, caffe_data.shape, diff / pytorch_data.size))
-
-    print('Total diff sum: {:.3f}'.format(diff_sum / size))
+    # # ----- Compare 4 output layers
+    # def ascend_caffe_out_layer(x, y):
+    #     x_name, y_name = x[0], y[0]
+    #     x_match = re.match('([a-zA-Z\_]+)([0-9]+)', x_name).groups()
+    #     y_match = re.match('([a-zA-Z\_]+)([0-9]+)', y_name).groups()
+    #     x_id = int(x_match[1])
+    #     y_id = int(y_match[1])
+    #
+    #     if x_id > y_id:
+    #         return 1
+    #     elif x_id < y_id:
+    #         return -1
+    #     else:
+    #         return 0
+    #
+    # out_Tensor_caffe = sorted(out_Tensor_caffe.items(), key=cmp_to_key(ascend_caffe_out_layer))
+    #
+    # size, diff_sum = 0, 0.0
+    # for x, y in zip(out_Tensor_pytorch, out_Tensor_caffe):
+    #     blob_name, caffe_data = y[0], y[1]
+    #
+    #     if args.cuda:
+    #         pytorch_data = x.data.cpu().numpy()
+    #     else:
+    #         pytorch_data = x.data.numpy()
+    #
+    #     assert pytorch_data.shape == caffe_data.shape
+    #
+    #     diff = abs(pytorch_data - caffe_data).sum()
+    #     diff_sum += diff
+    #     size += pytorch_data.size
+    #     print('%-30s pytorch_shape: %-20s caffe_shape: %-20s output_diff: %f' % (
+    #         blob_name, pytorch_data.shape, caffe_data.shape, diff / pytorch_data.size))
+    #
+    # print('Total diff sum: {:.3f}'.format(diff_sum / size))
 
     # # ----- Compare the 3 layers before YOLO
     # blob_names = ['leaky_relu_blob93', 'leaky_relu_blob100', 'leaky_relu_blob107']
@@ -293,6 +293,76 @@ if __name__ == '__main__':
     #
     # print('Total diff sum: {:.3f}'.format(diff_sum / size))
 
+    # # Compare 4 output layers
+    # # ----- Compare 3 deconv layers
+    # layer_names = ['conv_blob22', 'conv_blob25', 'conv_blob28', 'conv_blob29']
+    # caffe_layer_0 = out_Tensor_caffe[layer_names[0]].data
+    # caffe_layer_1 = out_Tensor_caffe[layer_names[1]].data
+    # caffe_layer_2 = out_Tensor_caffe[layer_names[2]].data
+    # caffe_layer_3 = out_Tensor_caffe[layer_names[3]].data
+    #
+    # if args.cuda:
+    #     pytorch_layer_0 = out_Tensor_pytorch[0].data.cpu().numpy()
+    #     pytorch_layer_1 = out_Tensor_pytorch[1].data.cpu().numpy()
+    #     pytorch_layer_2 = out_Tensor_pytorch[2].data.cpu().numpy()
+    #     pytorch_layer_3 = out_Tensor_pytorch[3].data.cpu().numpy()
+    #
+    # else:
+    #     pytorch_layer_0 = out_Tensor_pytorch[0].data.numpy()
+    #     pytorch_layer_1 = out_Tensor_pytorch[1].data.numpy()
+    #     pytorch_layer_2 = out_Tensor_pytorch[2].data.numpy()
+    #     pytorch_layer_3 = out_Tensor_pytorch[3].data.numpy()
+    #
+    # layer_diff_0 = abs(pytorch_layer_0 - caffe_layer_0).sum() / pytorch_layer_0.size  # numpy size
+    # layer_diff_1 = abs(pytorch_layer_1 - caffe_layer_1).sum() / pytorch_layer_1.size
+    # layer_diff_2 = abs(pytorch_layer_2 - caffe_layer_2).sum() / pytorch_layer_2.size
+    # layer_diff_3 = abs(pytorch_layer_3 - caffe_layer_3).sum() / pytorch_layer_3.size
+    #
+    # print('{:s} diff: {:.3f}'.format(layer_names[0], layer_diff_0))
+    # print('{:s} diff: {:.3f}'.format(layer_names[1], layer_diff_1))
+    # print('{:s} diff: {:.3f}'.format(layer_names[2], layer_diff_2))
+    # print('{:s} diff: {:.3f}'.format(layer_names[3], layer_diff_3))
 
+
+    # No-upsample: compare 6 layers: 3 yolo output layers and 3 feature layers
+    layer_names = ['conv_blob22', 'conv_blob25', 'conv_blob28',
+                   'conv_blob29', 'conv_blob30', 'conv_blob31']
+    caffe_layer_0 = out_Tensor_caffe[layer_names[0]].data
+    caffe_layer_1 = out_Tensor_caffe[layer_names[1]].data
+    caffe_layer_2 = out_Tensor_caffe[layer_names[2]].data
+    caffe_layer_3 = out_Tensor_caffe[layer_names[3]].data
+    caffe_layer_4 = out_Tensor_caffe[layer_names[4]].data
+    caffe_layer_5 = out_Tensor_caffe[layer_names[5]].data
+
+    if args.cuda:
+        pytorch_layer_0 = out_Tensor_pytorch[0].data.cpu().numpy()
+        pytorch_layer_1 = out_Tensor_pytorch[1].data.cpu().numpy()
+        pytorch_layer_2 = out_Tensor_pytorch[2].data.cpu().numpy()
+        pytorch_layer_3 = out_Tensor_pytorch[3].data.cpu().numpy()
+        pytorch_layer_4 = out_Tensor_pytorch[4].data.cpu().numpy()
+        pytorch_layer_5 = out_Tensor_pytorch[5].data.cpu().numpy()
+
+    else:
+        pytorch_layer_0 = out_Tensor_pytorch[0].data.numpy()
+        pytorch_layer_1 = out_Tensor_pytorch[1].data.numpy()
+        pytorch_layer_2 = out_Tensor_pytorch[2].data.numpy()
+        pytorch_layer_3 = out_Tensor_pytorch[3].data.numpy()
+        pytorch_layer_4 = out_Tensor_pytorch[4].data.numpy()
+        pytorch_layer_5 = out_Tensor_pytorch[5].data.numpy()
+
+    layer_diff_0 = abs(pytorch_layer_0 - caffe_layer_0).sum() / pytorch_layer_0.size  # numpy size
+    layer_diff_1 = abs(pytorch_layer_1 - caffe_layer_1).sum() / pytorch_layer_1.size
+    layer_diff_2 = abs(pytorch_layer_2 - caffe_layer_2).sum() / pytorch_layer_2.size
+    layer_diff_3 = abs(pytorch_layer_3 - caffe_layer_3).sum() / pytorch_layer_3.size
+    layer_diff_4 = abs(pytorch_layer_4 - caffe_layer_4).sum() / pytorch_layer_4.size
+    layer_diff_5 = abs(pytorch_layer_5 - caffe_layer_5).sum() / pytorch_layer_5.size
+
+
+    print('{:s} diff: {:.3f}'.format(layer_names[0], layer_diff_0))
+    print('{:s} diff: {:.3f}'.format(layer_names[1], layer_diff_1))
+    print('{:s} diff: {:.3f}'.format(layer_names[2], layer_diff_2))
+    print('{:s} diff: {:.3f}'.format(layer_names[3], layer_diff_3))
+    print('{:s} diff: {:.3f}'.format(layer_names[4], layer_diff_4))
+    print('{:s} diff: {:.3f}'.format(layer_names[5], layer_diff_5))
 
     print('Done.')
