@@ -19,9 +19,9 @@ if __name__ == '__main__':
     names = ['car', 'bicycle', 'person', 'cyclist', 'tricycle']
     opt = {
         'img_size': 768,
-        'cfg': '/mnt/diskb/even/YOLOV4/cfg/yolov4-tiny-3l_no_group_id_no_upsample_linear.cfg',
+        'cfg': '/mnt/diskb/even/YOLOV4/cfg/yolov4_mobilev2_3l.cfg',
         'device': 'cpu',  # '0'
-        'weights': '/mnt/diskb/even/YOLOV4/weights/v4_tiny3l_no_upsample_track_last.weights',
+        'weights': '/mnt/diskb/even/YOLOV4/weights/yolov4_mobilenetv2_3l_track_last.pt',
     }
     id2cls = defaultdict(str)
     cls2id = defaultdict(int)
@@ -29,7 +29,7 @@ if __name__ == '__main__':
         id2cls[cls_id] = cls_name
         cls2id[cls_name] = cls_id
 
-    # max_id_dict = {
+    # max_ids_dict = {
     #     0: 330,           # car
     #     1: 102,           # bicycle
     #     2: 104,           # person
@@ -37,19 +37,15 @@ if __name__ == '__main__':
     #     4: 53             # tricycle
     # }  # cls_id -> track id number for traning
 
-    ## read from .npy(max_id_dict.npy file)
+    # read from .npy(max_id_dict.npy file)
     max_id_dict_file_path = '/mnt/diskb/even/dataset/MCMOT/max_id_dict.npz'
     if os.path.isfile(max_id_dict_file_path):
         load_dict = np.load(max_id_dict_file_path, allow_pickle=True)
     max_id_dict = load_dict['max_id_dict'][()]
-    print(max_id_dict)
+    # print(max_id_dict)
 
     device = torch_utils.select_device(opt['device'])
-    net = Darknet(opt['cfg'], opt['img_size'],
-                  False,
-                  max_id_dict,
-                  128,
-                  'track').to(device)
+    net = Darknet(opt['cfg'], opt['img_size'], False, max_id_dict, 128, 'track').to(device)
 
     # load weight file(.pt or .weights)
     if not os.path.isfile(opt['weights']):
@@ -65,8 +61,8 @@ if __name__ == '__main__':
 
     net.to(device).eval()
 
-    input = torch.ones([1, 3, 448, 768])
-    name = 'mcmot_yolov4_tiny3l'
+    input = torch.ones([1, 3, 448, 768])  # NCHW
+    name = 'mcmot_yolov4_mibilenetv2_3l'
 
     pytorch_to_caffe.trans_net(net, input, name)
     pytorch_to_caffe.save_prototxt('{}.prototxt'.format(name))

@@ -18,24 +18,17 @@ from collections import defaultdict
 if __name__ == '__main__':
     names = ['car', 'bicycle', 'person', 'cyclist', 'tricycle']
     opt = {
-        'img_size': 768,
-        'cfg': '/mnt/diskb/even/YOLOV4/cfg/yolov4-tiny-3l_no_group_id_no_upsample_linear.cfg',
         'device': 'cpu',  # '0'
-        'weights': '/mnt/diskb/even/YOLOV4/weights/v4_tiny3l_no_upsample_track_last.weights',
+        'img_size': 768,
+        'feat_out_ids': '-1',
+        'cfg': '/mnt/diskb/even/YOLOV4/cfg/yolov4-tiny-3l_no_group_id_one_feat_fuse.cfg',
+        'weights': '/mnt/diskb/even/YOLOV4/weights/v4_tiny3l_one_feat_fuse_track_last.weights',
     }
     id2cls = defaultdict(str)
     cls2id = defaultdict(int)
     for cls_id, cls_name in enumerate(names):
         id2cls[cls_id] = cls_name
         cls2id[cls_name] = cls_id
-
-    # max_id_dict = {
-    #     0: 330,           # car
-    #     1: 102,           # bicycle
-    #     2: 104,           # person
-    #     3: 312,           # cyclist
-    #     4: 53             # tricycle
-    # }  # cls_id -> track id number for traning
 
     ## read from .npy(max_id_dict.npy file)
     max_id_dict_file_path = '/mnt/diskb/even/dataset/MCMOT/max_id_dict.npz'
@@ -45,10 +38,13 @@ if __name__ == '__main__':
     print(max_id_dict)
 
     device = torch_utils.select_device(opt['device'])
-    net = Darknet(opt['cfg'], opt['img_size'],
+    net = Darknet(opt['cfg'],
+                  opt['img_size'],
                   False,
                   max_id_dict,
                   128,
+                  'FC',
+                  opt['feat_out_ids'],
                   'track').to(device)
 
     # load weight file(.pt or .weights)
@@ -61,12 +57,12 @@ if __name__ == '__main__':
         if 'epoch' in ckpt.keys():
             print('Checkpoint of epoch {} loaded.'.format(ckpt['epoch']))
     elif len(opt['weights']) > 0:  # darknet format
-        load_darknet_weights(net, opt['weights'])
+        load_darknet_weights(net, opt['weights'], cutoff=0)
 
     net.to(device).eval()
 
     input = torch.ones([1, 3, 448, 768])
-    name = 'mcmot_yolov4_tiny3l'
+    name = 'mcmot_yolov4_tiny3l_one_feat_fuse'
 
     pytorch_to_caffe.trans_net(net, input, name)
     pytorch_to_caffe.save_prototxt('{}.prototxt'.format(name))

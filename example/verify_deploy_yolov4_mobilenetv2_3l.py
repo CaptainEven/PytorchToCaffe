@@ -97,12 +97,12 @@ def forward_pytorch(cfg_file, weight_file, image):
     #     4: 53    # tricycle
     # }  # cls_id -> track id number for traning
 
-    ## read from .npy(max_id_dict.npy file)
+    # read from .npy(max_id_dict.npy file)
     max_id_dict_file_path = '/mnt/diskb/even/dataset/MCMOT/max_id_dict.npz'
     if os.path.isfile(max_id_dict_file_path):
         load_dict = np.load(max_id_dict_file_path, allow_pickle=True)
     max_id_dict = load_dict['max_id_dict'][()]
-    print(max_id_dict)
+    # print(max_id_dict)
 
     device = torch_utils.select_device(opt['device'])
     net = Darknet(cfg_file, opt['img_size'], False, max_id_dict, 128, 'track').to(device)
@@ -170,15 +170,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='convert caffe to pytorch')
 
     # Caffe cfg and weight file
-    parser.add_argument('--caffecfg', default='mcmot_yolov4_tiny3l.prototxt', type=str)
-    parser.add_argument('--caffeweight', default='mcmot_yolov4_tiny3l.caffemodel', type=str)
+    parser.add_argument('--caffecfg', default='mcmot_yolov4_mibilenetv2_3l.prototxt', type=str)
+    parser.add_argument('--caffeweight', default='mcmot_yolov4_mibilenetv2_3l.caffemodel', type=str)
 
     # Pytorch cfg and weight file
     parser.add_argument('--pytorchcfg',
                         type=str,
-                        default='/mnt/diskb/even/YOLOV4/cfg/yolov4-tiny-3l_no_group_id_no_upsample.cfg')
+                        default='/mnt/diskb/even/YOLOV4/cfg/yolov4_mobilev2_3l.cfg')
     parser.add_argument('--pytorchweight',
-                        default='/mnt/diskb/even/YOLOV4/weights/track_last_20_1215_ep20.weights',
+                        default='/mnt/diskb/even/YOLOV4/weights/yolov4_mobilenetv2_3l_track_last.pt',
                         type=str)
 
     parser.add_argument('--imgfile', default='001763.jpg', type=str)
@@ -214,11 +214,11 @@ if __name__ == '__main__':
     print('caffe forward time {:.3f}'.format(time_caffe))
 
     print('------------ Output Difference ------------')
-    # blob_name = 'fc_blob1'
+    blob_name = 'fc_blob1'
 
     # No-upsample: compare 6 layers: 3 yolo output layers and 3 feature layers
-    layer_names = ['conv_blob22', 'conv_blob25', 'conv_blob28',
-                   'sigmoid_1', 'sigmoid_2', 'sigmoid_3']
+    layer_names = ['conv_blob54', 'conv_blob60', 'conv_blob66',
+                   'conv_blob67', 'conv_blob68', 'conv_blob69']
     caffe_layer_0 = out_Tensor_caffe[layer_names[0]].data
     caffe_layer_1 = out_Tensor_caffe[layer_names[1]].data
     caffe_layer_2 = out_Tensor_caffe[layer_names[2]].data
@@ -248,7 +248,6 @@ if __name__ == '__main__':
     layer_diff_3 = abs(pytorch_layer_3 - caffe_layer_3).sum() / pytorch_layer_3.size
     layer_diff_4 = abs(pytorch_layer_4 - caffe_layer_4).sum() / pytorch_layer_4.size
     layer_diff_5 = abs(pytorch_layer_5 - caffe_layer_5).sum() / pytorch_layer_5.size
-
 
     print('{:s} diff: {:.3f}'.format(layer_names[0], layer_diff_0))
     print('{:s} diff: {:.3f}'.format(layer_names[1], layer_diff_1))

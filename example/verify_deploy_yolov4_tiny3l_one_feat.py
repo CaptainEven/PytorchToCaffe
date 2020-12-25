@@ -80,22 +80,15 @@ def forward_pytorch(cfg_file, weight_file, image):
 
     names = ['car', 'bicycle', 'person', 'cyclist', 'tricycle']
     opt = {
-        'img_size': 768,
         'device': 'cpu',  # '0'
+        'img_size': 768,
+        'feat_out_ids': '-1',
     }
     id2cls = defaultdict(str)
     cls2id = defaultdict(int)
     for cls_id, cls_name in enumerate(names):
         id2cls[cls_id] = cls_name
         cls2id[cls_name] = cls_id
-
-    # max_id_dict = {
-    #     0: 330,  # car
-    #     1: 102,  # bicycle
-    #     2: 104,  # person
-    #     3: 312,  # cyclist
-    #     4: 53    # tricycle
-    # }  # cls_id -> track id number for traning
 
     ## read from .npy(max_id_dict.npy file)
     max_id_dict_file_path = '/mnt/diskb/even/dataset/MCMOT/max_id_dict.npz'
@@ -105,7 +98,14 @@ def forward_pytorch(cfg_file, weight_file, image):
     print(max_id_dict)
 
     device = torch_utils.select_device(opt['device'])
-    net = Darknet(cfg_file, opt['img_size'], False, max_id_dict, 128, 'track').to(device)
+    net = Darknet(cfg_file,
+                  opt['img_size'],
+                  False,
+                  max_id_dict,
+                  128,
+                  'FC',
+                  opt['feat_out_ids'],
+                  'track').to(device)
     print('{} cfg file loaded.'.format(cfg_file))
 
     # load weight file(.pt or .weights)
@@ -117,8 +117,8 @@ def forward_pytorch(cfg_file, weight_file, image):
         net.load_state_dict(ckpt['model'])
         if 'epoch' in ckpt.keys():
             print('Checkpoint of epoch {} loaded.'.format(ckpt['epoch']))
-    elif len(weight_file) > 0:  # darknet format
-        load_darknet_weights(net, weight_file)
+    elif len(weight_file) > 0:  # dark-net format
+        load_darknet_weights(net, weight_file, cutoff=0)
         print('{} loaded.'.format(weight_file))
 
     if args.cuda:
@@ -169,16 +169,16 @@ def forward_caffe(proto_file, weight_file, image):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='convert caffe to pytorch')
 
-    # Caffe cfg and weight file
-    parser.add_argument('--caffecfg', default='mcmot_yolov4_tiny3l.prototxt', type=str)
-    parser.add_argument('--caffeweight', default='mcmot_yolov4_tiny3l.caffemodel', type=str)
+    # ---------- Caffe cfg and weight file
+    parser.add_argument('--caffecfg', default='mcmot_yolov4_tiny3l_one_feat_fuse.prototxt', type=str)
+    parser.add_argument('--caffeweight', default='mcmot_yolov4_tiny3l_one_feat_fuse.caffemodel', type=str)
 
-    # Pytorch cfg and weight file
+    # ---------- Pytorch cfg and weight file
     parser.add_argument('--pytorchcfg',
                         type=str,
-                        default='/mnt/diskb/even/YOLOV4/cfg/yolov4-tiny-3l_no_group_id_no_upsample.cfg')
+                        default='/mnt/diskb/even/YOLOV4/cfg/yolov4-tiny-3l_no_group_id_one_feat_fuse.cfg')
     parser.add_argument('--pytorchweight',
-                        default='/mnt/diskb/even/YOLOV4/weights/track_last_20_1215_ep20.weights',
+                        default='/mnt/diskb/even/YOLOV4/weights/v4_tiny3l_one_feat_fuse_track_last.weights',
                         type=str)
 
     parser.add_argument('--imgfile', default='001763.jpg', type=str)
@@ -217,44 +217,33 @@ if __name__ == '__main__':
     # blob_name = 'fc_blob1'
 
     # No-upsample: compare 6 layers: 3 yolo output layers and 3 feature layers
-    layer_names = ['conv_blob22', 'conv_blob25', 'conv_blob28',
-                   'sigmoid_1', 'sigmoid_2', 'sigmoid_3']
+    layer_names = ['conv_blob18', 'conv_blob21', 'conv_blob24',
+                   'batch_norm_blob23']
     caffe_layer_0 = out_Tensor_caffe[layer_names[0]].data
     caffe_layer_1 = out_Tensor_caffe[layer_names[1]].data
     caffe_layer_2 = out_Tensor_caffe[layer_names[2]].data
     caffe_layer_3 = out_Tensor_caffe[layer_names[3]].data
-    caffe_layer_4 = out_Tensor_caffe[layer_names[4]].data
-    caffe_layer_5 = out_Tensor_caffe[layer_names[5]].data
 
     if args.cuda:
         pytorch_layer_0 = out_Tensor_pytorch[0].data.cpu().numpy()
         pytorch_layer_1 = out_Tensor_pytorch[1].data.cpu().numpy()
         pytorch_layer_2 = out_Tensor_pytorch[2].data.cpu().numpy()
         pytorch_layer_3 = out_Tensor_pytorch[3].data.cpu().numpy()
-        pytorch_layer_4 = out_Tensor_pytorch[4].data.cpu().numpy()
-        pytorch_layer_5 = out_Tensor_pytorch[5].data.cpu().numpy()
 
     else:
         pytorch_layer_0 = out_Tensor_pytorch[0].data.numpy()
         pytorch_layer_1 = out_Tensor_pytorch[1].data.numpy()
         pytorch_layer_2 = out_Tensor_pytorch[2].data.numpy()
         pytorch_layer_3 = out_Tensor_pytorch[3].data.numpy()
-        pytorch_layer_4 = out_Tensor_pytorch[4].data.numpy()
-        pytorch_layer_5 = out_Tensor_pytorch[5].data.numpy()
 
     layer_diff_0 = abs(pytorch_layer_0 - caffe_layer_0).sum() / pytorch_layer_0.size  # numpy size
     layer_diff_1 = abs(pytorch_layer_1 - caffe_layer_1).sum() / pytorch_layer_1.size
     layer_diff_2 = abs(pytorch_layer_2 - caffe_layer_2).sum() / pytorch_layer_2.size
     layer_diff_3 = abs(pytorch_layer_3 - caffe_layer_3).sum() / pytorch_layer_3.size
-    layer_diff_4 = abs(pytorch_layer_4 - caffe_layer_4).sum() / pytorch_layer_4.size
-    layer_diff_5 = abs(pytorch_layer_5 - caffe_layer_5).sum() / pytorch_layer_5.size
-
 
     print('{:s} diff: {:.3f}'.format(layer_names[0], layer_diff_0))
     print('{:s} diff: {:.3f}'.format(layer_names[1], layer_diff_1))
     print('{:s} diff: {:.3f}'.format(layer_names[2], layer_diff_2))
     print('{:s} diff: {:.3f}'.format(layer_names[3], layer_diff_3))
-    print('{:s} diff: {:.3f}'.format(layer_names[4], layer_diff_4))
-    print('{:s} diff: {:.3f}'.format(layer_names[5], layer_diff_5))
 
     print('Done.')
