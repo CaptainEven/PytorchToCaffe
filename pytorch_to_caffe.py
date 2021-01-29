@@ -715,8 +715,10 @@ def _expand_as(input, *args):
     x = raw__expand_as__(input, *args)
     layer_name = log.add_layer(name="expand_as", with_num=True)
     log.add_blobs([x], name='expand_as_blob')
-    layer = caffe_net.Layer_param(name=layer_name, type='Convolution',
-                                  bottom=[log.blobs(input)], top=[log.blobs(x)])
+    layer = caffe_net.Layer_param(name=layer_name,
+                                  type='Convolution',
+                                  bottom=[log.blobs(input)],
+                                  top=[log.blobs(x)])
 
     def constant_weight(shape):
         weights = np.ones(shape, dtype='float32')

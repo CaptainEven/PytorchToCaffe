@@ -21,8 +21,8 @@ if __name__ == '__main__':
         'device': 'cpu',  # '0'
         'img_size': 768,
         'feat_out_ids': '-1',
-        'cfg': '/mnt/diskb/even/YOLOV4/cfg/yolov4-tiny-3l_no_group_id_one_feat_fuse.cfg',
-        'weights': '/mnt/diskb/even/YOLOV4/weights/v4_tiny3l_one_feat_fuse_track_last.weights',
+        'cfg': '/mnt/diskb/even/YOLOV4/cfg/yolov4_half_one_feat_fuse.cfg',
+        'weights': '/mnt/diskb/even/YOLOV4/weights/one_feat_fuse_track_last.weights',
     }
     id2cls = defaultdict(str)
     cls2id = defaultdict(int)
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     net.to(device).eval()
 
     input = torch.ones([1, 3, 448, 768])
-    name = 'mcmot_yolov4_tiny3l_one_feat_fuse'
+    name = 'mcmot_yolo_half_one_feat_fuse'
 
     pytorch_to_caffe.trans_net(net, input, name)
     pytorch_to_caffe.save_prototxt('{}.prototxt'.format(name))

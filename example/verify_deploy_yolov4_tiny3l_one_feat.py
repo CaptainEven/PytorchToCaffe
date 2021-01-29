@@ -170,15 +170,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='convert caffe to pytorch')
 
     # ---------- Caffe cfg and weight file
-    parser.add_argument('--caffecfg', default='mcmot_yolov4_tiny3l_one_feat_fuse.prototxt', type=str)
-    parser.add_argument('--caffeweight', default='mcmot_yolov4_tiny3l_one_feat_fuse.caffemodel', type=str)
+    parser.add_argument('--caffecfg', default='mcmot_yolo_half_one_feat_fuse.prototxt', type=str)
+    parser.add_argument('--caffeweight', default='mcmot_yolo_half_one_feat_fuse.caffemodel', type=str)
 
     # ---------- Pytorch cfg and weight file
     parser.add_argument('--pytorchcfg',
                         type=str,
-                        default='/mnt/diskb/even/YOLOV4/cfg/yolov4-tiny-3l_no_group_id_one_feat_fuse.cfg')
+                        default='/mnt/diskb/even/YOLOV4/cfg/yolov4_half_one_feat_fuse.cfg')
     parser.add_argument('--pytorchweight',
-                        default='/mnt/diskb/even/YOLOV4/weights/v4_tiny3l_one_feat_fuse_track_last.weights',
+                        default='/mnt/diskb/even/YOLOV4/weights/one_feat_fuse_track_last.weights',
                         type=str)
 
     parser.add_argument('--imgfile', default='001763.jpg', type=str)
@@ -217,8 +217,8 @@ if __name__ == '__main__':
     # blob_name = 'fc_blob1'
 
     # No-upsample: compare 6 layers: 3 yolo output layers and 3 feature layers
-    layer_names = ['conv_blob18', 'conv_blob21', 'conv_blob24',
-                   'batch_norm_blob23']
+    layer_names = ['conv_blob94', 'conv_blob102', 'conv_blob110',
+                   'conv_blob112']
     caffe_layer_0 = out_Tensor_caffe[layer_names[0]].data
     caffe_layer_1 = out_Tensor_caffe[layer_names[1]].data
     caffe_layer_2 = out_Tensor_caffe[layer_names[2]].data
